@@ -61,13 +61,21 @@ export class Logger {
   private static instance: Logger;
   private config: LogConfig = {
     logToConsole: true,
-    logToFile: false,
+    logToFile: true,
     logToDatabase: false,
     minLevel: LogLevel.INFO,
   };
 
   // Приватный конструктор для синглтона
-  private constructor() {}
+  private constructor() {
+    // Создаем директорию для логов, если её нет
+    const fs = require('fs');
+    const path = require('path');
+    const logDir = path.join(process.cwd(), 'logs');
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir);
+    }
+  }
 
   // Получение экземпляра логгера
   public static getInstance(): Logger {
@@ -84,31 +92,41 @@ export class Logger {
 
   // Логирование
   public log(entry: LogEntry) {
-    if (!this.config.logToConsole) return;
-
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] ${entry.level}: ${entry.message}`;
+    const logData = JSON.stringify(entry, null, 2);
 
-    switch (entry.level) {
-      case LogLevel.DEBUG:
-        if (this.config.minLevel === LogLevel.DEBUG) {
-          console.debug(logMessage, entry);
-        }
-        break;
-      case LogLevel.INFO:
-        if ([LogLevel.DEBUG, LogLevel.INFO].includes(this.config.minLevel)) {
-          console.info(logMessage, entry);
-        }
-        break;
-      case LogLevel.WARN:
-        if ([LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN].includes(this.config.minLevel)) {
-          console.warn(logMessage, entry);
-        }
-        break;
-      case LogLevel.ERROR:
-      case LogLevel.FATAL:
-        console.error(logMessage, entry);
-        break;
+    // Запись в файл
+    if (this.config.logToFile) {
+      const fs = require('fs');
+      const path = require('path');
+      const logFile = path.join(process.cwd(), 'logs', `app-${new Date().toISOString().split('T')[0]}.log`);
+      fs.appendFileSync(logFile, `${logMessage}\n${logData}\n\n`);
+    }
+
+    // Вывод в консоль
+    if (this.config.logToConsole) {
+      switch (entry.level) {
+        case LogLevel.DEBUG:
+          if (this.config.minLevel === LogLevel.DEBUG) {
+            console.debug(logMessage, entry);
+          }
+          break;
+        case LogLevel.INFO:
+          if ([LogLevel.DEBUG, LogLevel.INFO].includes(this.config.minLevel)) {
+            console.info(logMessage, entry);
+          }
+          break;
+        case LogLevel.WARN:
+          if ([LogLevel.DEBUG, LogLevel.INFO, LogLevel.WARN].includes(this.config.minLevel)) {
+            console.warn(logMessage, entry);
+          }
+          break;
+        case LogLevel.ERROR:
+        case LogLevel.FATAL:
+          console.error(logMessage, entry);
+          break;
+      }
     }
   }
 

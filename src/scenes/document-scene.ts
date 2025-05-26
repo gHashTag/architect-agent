@@ -2,6 +2,7 @@ import { Scenes } from 'telegraf';
 import { logger, LogType } from '../logger';
 import { BotContext } from '../types/bot';
 
+// Возвращаю на BaseScene
 export const documentScene = new Scenes.BaseScene<BotContext>('document');
 
 documentScene.enter(async (ctx) => {
@@ -22,6 +23,11 @@ documentScene.enter(async (ctx) => {
 
 // Обработка текстовых сообщений
 documentScene.on('text', async (ctx) => {
+  // Игнорируем команды (сообщения, начинающиеся с '/')
+  if (ctx.message.text.startsWith('/')) {
+    return;
+  }
+
   try {
     const text = ctx.message.text;
     logger.info("Processing text in document scene", {

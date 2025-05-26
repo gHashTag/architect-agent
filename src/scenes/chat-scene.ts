@@ -2,6 +2,7 @@ import { Scenes } from 'telegraf';
 import { logger, LogType } from '../logger';
 import { BotContext } from '../types/bot';
 
+// Возвращаю на BaseScene
 export const chatScene = new Scenes.BaseScene<BotContext>('chat');
 
 chatScene.enter(async (ctx) => {
@@ -10,12 +11,22 @@ chatScene.enter(async (ctx) => {
     userId: ctx.from?.id,
     username: ctx.from?.username
   });
-  await ctx.reply('Привет! Я чат-бот на базе Vectara. Задайте мне вопрос, и я постараюсь найти ответ в документации.');
+  await ctx.reply('Привет! Я чат-бот на базе Vectara. Задайте мне вопрос, и я постараюсь найти ответ в документации.\n\nИспользуйте /exit для выхода.');
 });
 
 chatScene.on('text', async (ctx) => {
+  // Игнорируем команды (сообщения, начинающиеся с '/')
+  if (ctx.message.text.startsWith('/')) {
+    return; 
+  }
+
+  if (!ctx.message || !('text' in ctx.message)) {
+      return;
+  }
+
+  const query = ctx.message.text;
+
   try {
-    const query = ctx.message.text;
     logger.info("Processing chat query", {
       type: LogType.SYSTEM,
       userId: ctx.from?.id,
