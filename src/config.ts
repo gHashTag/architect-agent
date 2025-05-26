@@ -15,6 +15,12 @@ export interface AppConfig {
   PORT?: number;
   // Apollo Client конфигурация
   GRAPHQL_ENDPOINT?: string;
+  vectara: {
+    customerId: string;
+    apiKey: string;
+    corpusId: string;
+    servingEndpoint: string;
+  };
 }
 
 /**
@@ -50,6 +56,12 @@ const createConfig = (): AppConfig => {
     WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
     PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
     GRAPHQL_ENDPOINT: process.env.GRAPHQL_ENDPOINT,
+    vectara: {
+      customerId: process.env.VECTARA_CUSTOMER_ID || '',
+      apiKey: process.env.VECTARA_API_KEY || '',
+      corpusId: process.env.VECTARA_CORPUS_ID || '',
+      servingEndpoint: process.env.VECTARA_SERVING_ENDPOINT || 'api.vectara.io',
+    },
   };
 
   // Проверяем обязательные параметры

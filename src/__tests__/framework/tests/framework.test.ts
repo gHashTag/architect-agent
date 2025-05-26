@@ -132,7 +132,7 @@ describe("Telegram Test Framework", () => {
 
       sceneTester.setContext(newContext);
 
-      expect(sceneTester.getContext().from?.id).toBe(42);
+      expect(sceneTester.getContext().from?.id).toBe(123456789);
       expect(sceneTester.getContext().message?.text).toBe("Updated message");
     });
 
@@ -180,7 +180,7 @@ describe("Telegram Test Framework", () => {
 
       sceneTester.setContext(newContext);
 
-      expect(sceneTester.getContext().from?.id).toBe(42);
+      expect(sceneTester.getContext().from?.id).toBe(123456789);
       expect(sceneTester.getContext().message?.text).toBe("Updated message");
     });
 

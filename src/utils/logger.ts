@@ -40,6 +40,13 @@ export interface LogEntry {
   username?: string;
   data?: any;
   error?: Error;
+  query?: string;
+  documentLength?: number;
+  resultsCount?: number;
+  responseLength?: number;
+  textLength?: number;
+  hasDocument?: boolean;
+  hasToken?: boolean;
 }
 
 interface LogConfig {
@@ -81,7 +88,7 @@ export class Logger {
 
     const timestamp = new Date().toISOString();
     const logMessage = `[${timestamp}] ${entry.level}: ${entry.message}`;
-    
+
     switch (entry.level) {
       case LogLevel.DEBUG:
         if (this.config.minLevel === LogLevel.DEBUG) {
@@ -108,50 +115,50 @@ export class Logger {
   // Вспомогательные методы для разных уровней логирования
 
   public debug(message: string, meta: Partial<LogEntry> = {}) {
-    this.log({ 
+    this.log({
       timestamp: new Date(),
       message, 
-      level: LogLevel.DEBUG, 
+      level: LogLevel.DEBUG,
       type: LogType.SYSTEM, 
       ...meta 
     });
   }
 
   public info(message: string, meta: Partial<LogEntry> = {}) {
-    this.log({ 
+    this.log({
       timestamp: new Date(),
       message, 
-      level: LogLevel.INFO, 
+      level: LogLevel.INFO,
       type: LogType.SYSTEM, 
       ...meta 
     });
   }
 
   public warn(message: string, meta: Partial<LogEntry> = {}) {
-    this.log({ 
+    this.log({
       timestamp: new Date(),
       message, 
-      level: LogLevel.WARN, 
+      level: LogLevel.WARN,
       type: LogType.SYSTEM, 
       ...meta 
     });
   }
 
   public error(message: string, meta: Partial<LogEntry> = {}) {
-    this.log({ 
+    this.log({
       timestamp: new Date(),
       message, 
-      level: LogLevel.ERROR, 
+      level: LogLevel.ERROR,
       type: LogType.SYSTEM, 
       ...meta 
     });
   }
 
   public fatal(message: string, meta: Partial<LogEntry> = {}) {
-    this.log({ 
+    this.log({
       timestamp: new Date(),
       message, 
-      level: LogLevel.FATAL, 
+      level: LogLevel.FATAL,
       type: LogType.SYSTEM, 
       ...meta 
     });

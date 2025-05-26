@@ -5,27 +5,27 @@
 ## Установка
 
 1. Клонируйте репозиторий:
-```bash
+    ```bash
 git clone <repository-url>
 cd hello-world-telegraph-bot
-```
+    ```
 
 2. Установите зависимости:
-```bash
-npm install
-```
+    ```bash
+    npm install
+    ```
 
 3. Создайте файл .env на основе example.env:
-```bash
+    ```bash
 cp example.env .env
-```
+    ```
 
 4. Отредактируйте .env и добавьте ваш BOT_TOKEN, полученный от @BotFather в Telegram.
 
 ## Запуск
 
 ### Разработка
-```bash
+    ```bash
 npm run dev
 ```
 

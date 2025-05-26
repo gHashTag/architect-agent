@@ -1,95 +1,162 @@
 import * as dotenv from "dotenv";
-import { Telegraf, Context } from "telegraf";
+import { Telegraf } from "telegraf";
 import { logger, LogLevel, LogType } from "./utils/logger";
 import { config } from "./config";
+import { Scenes, session as sessionMiddleware } from 'telegraf';
+import { chatScene } from './scenes/chat-scene';
+import { documentScene } from './scenes/document-scene';
+import { VectaraAdapter } from './adapters/vectara-adapter';
+import { BotContext, SceneSession } from './types/bot';
 
-let bot: Telegraf<Context>;
+let bot: Telegraf<BotContext>;
 
 // --- Основная функция запуска бота ---
 async function startBot() {
-  console.log("Starting bot initialization...");
+  logger.info("Starting bot initialization...", { type: LogType.SYSTEM });
   dotenv.config();
-  console.log("Environment variables loaded");
+  logger.info("Environment variables loaded", { type: LogType.SYSTEM });
 
   logger.configure({
     logToConsole: true,
     minLevel: LogLevel.DEBUG,
   });
-  logger.info("Запуск бота...", { type: LogType.SYSTEM });
+  logger.info("Logger configured", { type: LogType.SYSTEM });
 
   const BOT_TOKEN = process.env.BOT_TOKEN || config.BOT_TOKEN;
-  console.log("BOT_TOKEN found:", BOT_TOKEN ? "Yes" : "No");
+  logger.info("BOT_TOKEN status", { 
+    type: LogType.SYSTEM,
+    hasToken: !!BOT_TOKEN 
+  });
   
   if (!BOT_TOKEN) {
-    logger.fatal("BOT_TOKEN не найден в .env файле или конфигурации.", {
+    logger.fatal("BOT_TOKEN not found in .env file or configuration", {
       type: LogType.SYSTEM,
     });
     process.exit(1);
   }
 
-  console.log("Creating Telegraf instance...");
-  bot = new Telegraf<Context>(BOT_TOKEN);
-  console.log("Telegraf instance created");
+  logger.info("Creating Telegraf instance...", { type: LogType.SYSTEM });
+  bot = new Telegraf<BotContext>(BOT_TOKEN);
+  logger.info("Telegraf instance created", { type: LogType.SYSTEM });
 
-  // Базовые команды
-  bot.start(async (ctx: Context) => {
-    console.log("Received /start command");
-    const userFirstName = ctx.from?.first_name || "незнакомец";
-    await ctx.reply(`Привет, ${userFirstName}! Я простой Hello World бот.`);
+  // Инициализация Vectara адаптера
+  logger.info("Initializing Vectara adapter...", { type: LogType.SYSTEM });
+  const vectaraAdapter = new VectaraAdapter(config.vectara);
+  logger.info("Vectara adapter initialized", { type: LogType.SYSTEM });
+
+  // Создание менеджера сцен
+  logger.info("Creating scene manager...", { type: LogType.SYSTEM });
+  const stage = new Scenes.Stage<BotContext>([chatScene, documentScene]);
+  logger.info("Scene manager created", { type: LogType.SYSTEM });
+
+  // Добавление middleware для сцен
+  logger.info("Setting up middleware...", { type: LogType.SYSTEM });
+  bot.use(sessionMiddleware());
+  bot.use(stage.middleware());
+  logger.info("Middleware setup completed", { type: LogType.SYSTEM });
+
+  // Добавление команды для запуска чат-бота
+  bot.command('chat', async (ctx) => {
+    logger.info("Chat command received", { 
+      type: LogType.COMMAND,
+      userId: ctx.from?.id,
+      username: ctx.from?.username 
+    });
+    ctx.scene.session.vectaraAdapter = vectaraAdapter;
+    await ctx.scene.enter('chat');
   });
 
-  bot.help(async (ctx: Context) => {
-    console.log("Received /help command");
+  // Добавление команды для работы с документами
+  bot.command('documents', async (ctx) => {
+    logger.info("Documents command received", { 
+      type: LogType.COMMAND,
+      userId: ctx.from?.id,
+      username: ctx.from?.username 
+    });
+    ctx.scene.session.vectaraAdapter = vectaraAdapter;
+    await ctx.scene.enter('document');
+  });
+
+  // Базовые команды
+  bot.start(async (ctx) => {
+    logger.info("Start command received", { 
+      type: LogType.COMMAND,
+      userId: ctx.from?.id,
+      username: ctx.from?.username 
+    });
+    const userFirstName = ctx.from?.first_name || "незнакомец";
+    await ctx.reply(
+      `Привет, ${userFirstName}! Я чат-бот на базе Vectara.\n\n` +
+      `Доступные команды:\n` +
+      `/chat - Начать диалог с ботом\n` +
+      `/documents - Работа с документами\n` +
+      `/help - Показать справку`
+    );
+  });
+
+  bot.help(async (ctx) => {
+    logger.info("Help command received", { 
+      type: LogType.COMMAND,
+      userId: ctx.from?.id,
+      username: ctx.from?.username 
+    });
     const helpMessage =
       "Доступные команды:\n" +
       "/start - Начальное приветствие\n" +
-      "/help - Это сообщение";
+      "/help - Это сообщение\n" +
+      "/chat - Начать диалог с ботом\n" +
+      "/documents - Работа с документами\n\n" +
+      "В режиме документов:\n" +
+      "- Отправьте текстовый документ для загрузки\n" +
+      "- Используйте команду /upload для загрузки документа\n" +
+      "- Используйте команду /cancel для отмены текущего документа\n" +
+      "- Используйте команду /exit для выхода из режима документов\n" +
+      "- Задайте вопрос, начиная с '?' или содержащий слово 'вопрос'";
     await ctx.reply(helpMessage);
   });
 
   // Обработка ошибок
-  bot.catch((err: any, ctx: Context) => {
-    console.error("Bot error:", err);
-    logger.error("Ошибка в боте:", {
+  bot.catch((err: any, ctx) => {
+    logger.error("Bot error occurred", {
+      type: LogType.ERROR,
       error: err instanceof Error ? err : new Error(String(err)),
-      type: LogType.SYSTEM,
+      userId: ctx.from?.id,
+      username: ctx.from?.username,
+      message: ctx.message?.text
     });
     ctx.reply("Произошла ошибка. Пожалуйста, попробуйте позже.").catch(() => {});
   });
 
   // Запуск бота
   try {
-    console.log("Launching bot...");
+    logger.info("Launching bot...", { type: LogType.SYSTEM });
     await bot.launch();
-    console.log("Bot launched successfully!");
-    logger.info("Бот успешно запущен!", { type: LogType.SYSTEM });
+    logger.info("Bot launched successfully!", { type: LogType.SYSTEM });
   } catch (error) {
-    console.error("Error launching bot:", error);
-    logger.fatal("Ошибка при запуске бота:", {
-      error: error instanceof Error ? error : new Error(String(error)),
+    logger.fatal("Error launching bot", {
       type: LogType.SYSTEM,
+      error: error instanceof Error ? error : new Error(String(error))
     });
     process.exit(1);
   }
 
   // Graceful shutdown
   process.once("SIGINT", () => {
-    console.log("Received SIGINT, stopping bot...");
+    logger.info("Received SIGINT, stopping bot...", { type: LogType.SYSTEM });
     bot.stop("SIGINT");
   });
   process.once("SIGTERM", () => {
-    console.log("Received SIGTERM, stopping bot...");
+    logger.info("Received SIGTERM, stopping bot...", { type: LogType.SYSTEM });
     bot.stop("SIGTERM");
   });
 }
 
 // Запускаем бота
-console.log("Starting bot...");
+logger.info("Starting bot...", { type: LogType.SYSTEM });
 startBot().catch((error) => {
-  console.error("Critical error:", error);
-  logger.fatal("Критическая ошибка при запуске бота:", {
-    error: error instanceof Error ? error : new Error(String(error)),
+  logger.fatal("Critical error during bot startup", {
     type: LogType.SYSTEM,
+    error: error instanceof Error ? error : new Error(String(error))
   });
   process.exit(1);
 });

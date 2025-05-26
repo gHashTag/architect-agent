@@ -1,21 +1,24 @@
 {
-  "name": "hello-world-telegraph-bot",
+  "name": "architect-agent",
   "version": "1.0.0",
-  "description": "A simple Hello World bot using Telegraph framework",
-  "main": "dist/bot.js",
+  "description": "Telegram bot with Vectara integration",
+  "main": "src/bot.ts",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/bot.js",
-    "dev": "ts-node src/bot.ts",
+    "start": "bun run src/bot.ts",
+    "dev": "bun run src/bot.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
+    "axios": "^1.6.7",
+    "dotenv": "^16.4.5",
     "telegraf": "^4.15.3"
   },
   "devDependencies": {
-    "@types/node": "^20.10.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "@types/node": "^20.11.24",
+    "bun-types": "latest",
+    "typescript": "^5.3.3",
+    "vitest": "^1.3.1"
   }
 }
