@@ -1,6 +1,5 @@
-import { beforeEach, afterEach, mock, expect } from "bun:test";
+import { beforeEach, afterEach, mock, expect } from 'bun:test';
 import * as dotenv from 'dotenv';
-import { vi } from 'vitest';
 
 // Загружаем переменные окружения из .env файла
 dotenv.config();
@@ -78,45 +77,22 @@ export const scraperMocks = {
 
 // Настройка перед каждым тестом
 beforeEach(() => {
-  // В Bun нет прямого аналога resetAll, поэтому очищаем каждый мок отдельно
-  Object.values(telegrafMocks).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  Object.values(scenesMocks).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
+  Object.values(telegrafMocks).forEach(fn => typeof fn === 'function' && fn.mockClear());
+  Object.values(scenesMocks).forEach(fn => typeof fn === 'function' && fn.mockClear());
   MockTelegraf.mockClear();
-  Object.values(MockMarkup).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  Object.values(MockScenes).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  Object.values(scraperMocks).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
+  Object.values(MockMarkup).forEach(fn => typeof fn === 'function' && fn.mockClear());
+  Object.values(MockScenes).forEach(fn => typeof fn === 'function' && fn.mockClear());
+  Object.values(scraperMocks).forEach(fn => typeof fn === 'function' && fn.mockClear());
 });
 
 // Очистка после каждого теста
 afterEach(() => {
-  // В Bun нет прямого аналога resetAll, поэтому очищаем каждый мок отдельно
-  Object.values(telegrafMocks).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  Object.values(scenesMocks).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
+  Object.values(telegrafMocks).forEach(fn => typeof fn === 'function' && fn.mockClear());
+  Object.values(scenesMocks).forEach(fn => typeof fn === 'function' && fn.mockClear());
   MockTelegraf.mockClear();
-  Object.values(MockMarkup).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  Object.values(MockScenes).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  Object.values(scraperMocks).forEach(mockFn => {
-    if (typeof mockFn === 'function') mockFn.mockClear();
-  });
-  vi.clearAllMocks();
+  Object.values(MockMarkup).forEach(fn => typeof fn === 'function' && fn.mockClear());
+  Object.values(MockScenes).forEach(fn => typeof fn === 'function' && fn.mockClear());
+  Object.values(scraperMocks).forEach(fn => typeof fn === 'function' && fn.mockClear());
 });
 
 // Устанавливаем глобальную переменную для Neon
@@ -124,25 +100,25 @@ afterEach(() => {
   "postgresql://fake:fake@fake.neon.tech/fake";
 
 // Настройка глобальных моков
-vi.mock('../adapters/vectara-adapter', () => ({
-  VectaraAdapter: vi.fn(() => ({
-    query: vi.fn(),
-    uploadDocument: vi.fn(),
+mock.module('../adapters/vectara-adapter', () => ({
+  VectaraAdapter: mock(() => ({
+    query: mock(),
+    uploadDocument: mock(),
   })),
 }));
 
-vi.mock('telegraf', () => ({
-  Telegraf: vi.fn(() => ({
-    command: vi.fn(),
-    start: vi.fn(),
-    help: vi.fn(),
-    catch: vi.fn(),
-    launch: vi.fn(),
-    stop: vi.fn(),
-    use: vi.fn(),
+mock.module('telegraf', () => ({
+  Telegraf: mock(() => ({
+    command: mock(),
+    start: mock(),
+    help: mock(),
+    catch: mock(),
+    launch: mock(),
+    stop: mock(),
+    use: mock(),
   })),
   Scenes: {
-    BaseScene: vi.fn(),
-    Stage: vi.fn(),
+    BaseScene: mock(),
+    Stage: mock(),
   },
 }));

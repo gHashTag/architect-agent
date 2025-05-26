@@ -1,8 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import axios from 'axios';
 import { VectaraAdapter } from '../../adapters/vectara-adapter';
 
-vi.mock('axios');
+const axiosPostMock = mock();
+mock.module('axios', () => ({
+  post: axiosPostMock,
+}));
 
 describe('VectaraAdapter', () => {
   const mockConfig = {
@@ -16,7 +19,7 @@ describe('VectaraAdapter', () => {
 
   beforeEach(() => {
     adapter = new VectaraAdapter(mockConfig);
-    vi.clearAllMocks();
+    axiosPostMock.mockReset();
   });
 
   describe('query', () => {
@@ -32,11 +35,8 @@ describe('VectaraAdapter', () => {
           ],
         },
       };
-
-      (axios.post as any).mockResolvedValueOnce(mockResponse);
-
+      axiosPostMock.mockImplementation(() => Promise.resolve(mockResponse));
       const result = await adapter.query('test query');
-
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.vectara.io/v1/query',
         {
@@ -60,7 +60,6 @@ describe('VectaraAdapter', () => {
           },
         }
       );
-
       expect(result).toEqual({
         response: [
           {
@@ -78,23 +77,19 @@ describe('VectaraAdapter', () => {
           response: [],
         },
       };
-
-      (axios.post as any).mockResolvedValueOnce(mockResponse);
-
+      axiosPostMock.mockImplementation(() => Promise.resolve(mockResponse));
       const result = await adapter.query('test query');
-
       expect(result).toEqual({
         response: [],
       });
     });
 
     it('should handle API errors', async () => {
-      (axios.post as any).mockRejectedValueOnce({
+      axiosPostMock.mockImplementation(() => Promise.reject({
         response: {
           status: 401,
         },
-      });
-
+      }));
       await expect(adapter.query('test query')).rejects.toThrow('Invalid Vectara API credentials');
     });
 
@@ -111,11 +106,8 @@ describe('VectaraAdapter', () => {
           status: 'success',
         },
       };
-
-      (axios.post as any).mockResolvedValueOnce(mockResponse);
-
+      axiosPostMock.mockImplementation(() => Promise.resolve(mockResponse));
       await adapter.uploadDocument('test document', { source: 'test' });
-
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.vectara.io/v1/upload',
         {
@@ -143,19 +135,17 @@ describe('VectaraAdapter', () => {
     });
 
     it('should handle API errors', async () => {
-      (axios.post as any).mockRejectedValueOnce({
+      axiosPostMock.mockImplementation(() => Promise.reject({
         response: {
           status: 404,
         },
-      });
-
+      }));
       await expect(adapter.uploadDocument('test document')).rejects.toThrow('Vectara corpus not found');
     });
 
     it('should validate input', async () => {
       await expect(adapter.uploadDocument('')).rejects.toThrow('Document text cannot be empty');
       await expect(adapter.uploadDocument(null as any)).rejects.toThrow('Document text cannot be empty');
-      
       const longDocument = 'a'.repeat(100001);
       await expect(adapter.uploadDocument(longDocument)).rejects.toThrow('Document text is too long');
     });

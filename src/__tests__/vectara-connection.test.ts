@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "bun:test";
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { VectaraAdapter } from '../adapters/vectara-adapter';
 import { config } from '../config';
 
@@ -21,7 +21,7 @@ describe('Vectara Connection Test', () => {
     
     // Проверяем структуру ответа
     expect(result).toBeDefined();
-    expect(result.response).toBeInstanceOf(Array);
+    expect(Array.isArray(result.response)).toBe(true);
     
     // Выводим результаты для проверки
     console.log('Vectara connection test results:', {
