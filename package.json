@@ -1,7 +1,7 @@
 {
-  "name": "architect-agent",
+  "name": "architect-agent-bot",
   "version": "1.0.0",
-  "description": "Telegram bot with Vectara integration",
+  "description": "Professional Telegram bot with AI-Architect consultation features",
   "main": "src/bot.ts",
   "scripts": {
     "start": "bun run src/bot.ts",

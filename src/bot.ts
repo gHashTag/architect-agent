@@ -5,8 +5,8 @@ import { config } from "./config";
 import { Scenes, session as sessionMiddleware } from 'telegraf';
 import { chatScene } from './scenes/chat-scene';
 import { documentScene } from './scenes/document-scene';
-import { VectaraAdapter } from './adapters/vectara-adapter';
-import { BotContext, SceneSession } from './types/bot';
+import { BotContext } from './types/bot';
+import { handleAICommand, handleAIStopCommand, handleAIMessage, AIContext } from './utils/aiAssistantHandler';
 
 let bot: Telegraf<BotContext>;
 
@@ -22,7 +22,7 @@ async function startBot() {
   });
   logger.info("Logger configured", { type: LogType.SYSTEM });
 
-  const BOT_TOKEN = process.env.BOT_TOKEN || config.BOT_TOKEN;
+  const BOT_TOKEN = config.bot.token;
   logger.info("BOT_TOKEN status", { 
     type: LogType.SYSTEM,
     hasToken: !!BOT_TOKEN 
@@ -39,14 +39,9 @@ async function startBot() {
   bot = new Telegraf<BotContext>(BOT_TOKEN);
   logger.info("Telegraf instance created", { type: LogType.SYSTEM });
 
-  // Инициализация Vectara адаптера
-  logger.info("Initializing Vectara adapter...", { type: LogType.SYSTEM });
-  const vectaraAdapter = new VectaraAdapter(config.vectara);
-  logger.info("Vectara adapter initialized", { type: LogType.SYSTEM });
-
-  // Создание менеджера сцен
+  // Создание менеджера сцен - используем BotContext 
   logger.info("Creating scene manager...", { type: LogType.SYSTEM });
-  const stage = new Scenes.Stage<BotContext>([chatScene, documentScene]);
+  const stage = new Scenes.Stage([chatScene, documentScene]);
   logger.info("Scene manager created", { type: LogType.SYSTEM });
 
   // Добавление middleware для сцен
@@ -58,55 +53,82 @@ async function startBot() {
   // Добавление команды для запуска чат-бота
   bot.command('chat', async (ctx) => {
     logger.info("Chat command received", { 
-      type: LogType.COMMAND,
+      type: LogType.USER_ACTION,
       userId: ctx.from?.id,
       username: ctx.from?.username 
     });
-    ctx.scene.session.vectaraAdapter = vectaraAdapter;
     await ctx.scene.enter('chat');
   });
 
   // Добавление команды для работы с документами
   bot.command('documents', async (ctx) => {
     logger.info("Documents command received", { 
-      type: LogType.COMMAND,
+      type: LogType.USER_ACTION,
       userId: ctx.from?.id,
       username: ctx.from?.username 
     });
-    ctx.scene.session.vectaraAdapter = vectaraAdapter;
     await ctx.scene.enter('document');
+  });
+
+  // 🕉️ AI-АГЕНТ КОМАНДЫ
+  bot.command('ai', async (ctx) => {
+    await handleAICommand(ctx as AIContext);
+  });
+
+  bot.command('ai_stop', async (ctx) => {
+    await handleAIStopCommand(ctx as AIContext);
+  });
+
+  // Обработчик всех текстовых сообщений (включая AI диалог)
+  bot.on('text', async (ctx) => {
+    // Сначала проверяем, не находимся ли мы в AI диалоге
+    await handleAIMessage(ctx as AIContext);
+    
+    // Если это не AI диалог, сообщение будет проигнорировано handleAIMessage
+    // Здесь можно добавить другую обработку текстовых сообщений при необходимости
   });
 
   // Базовые команды
   bot.start(async (ctx) => {
     logger.info("Start command received", { 
-      type: LogType.COMMAND,
+      type: LogType.USER_ACTION,
       userId: ctx.from?.id,
       username: ctx.from?.username 
     });
     const userFirstName = ctx.from?.first_name || "незнакомец";
     await ctx.reply(
-      `Привет, ${userFirstName}! Я чат-бот на базе Vectara.\n\n` +
-      `Доступные команды:\n` +
+      `🏗️ Привет, ${userFirstName}! Я профессиональный Telegram-бот с поддержкой AI-Архитектора.\n\n` +
+      `📋 Доступные команды:\n` +
       `/chat - Начать диалог с ботом\n` +
       `/documents - Работа с документами\n` +
+      `/ai - 🤖 Начать консультацию с AI-Архитектором\n` +
+      `/ai_stop - Завершить консультацию с AI-Архитектором\n` +
       `/help - Показать справку`
     );
   });
 
   bot.help(async (ctx) => {
     logger.info("Help command received", { 
-      type: LogType.COMMAND,
+      type: LogType.USER_ACTION,
       userId: ctx.from?.id,
       username: ctx.from?.username 
     });
     const helpMessage =
-      "Доступные команды:\n" +
+      "📋 Доступные команды:\n" +
       "/start - Начальное приветствие\n" +
       "/help - Это сообщение\n" +
       "/chat - Начать диалог с ботом\n" +
       "/documents - Работа с документами\n\n" +
-      "В режиме документов:\n" +
+      "🏗️ **AI-Архитектор:**\n" +
+      "/ai - Начать консультацию с AI-Архитектором\n" +
+      "/ai_stop - Завершить консультацию с AI-Архитектором\n\n" +
+      "🤖 Возможности AI-Архитектора:\n" +
+      "- Архитектурное планирование и дизайн\n" +
+      "- Консультации по HAUS блокам\n" +
+      "- Выбор материалов и технологий\n" +
+      "- Энергоэффективные решения\n" +
+      "- Технические расчеты\n\n" +
+      "📄 В режиме документов:\n" +
       "- Отправьте текстовый документ для загрузки\n" +
       "- Используйте команду /upload для загрузки документа\n" +
       "- Используйте команду /cancel для отмены текущего документа\n" +
@@ -118,11 +140,11 @@ async function startBot() {
   // Обработка ошибок
   bot.catch((err: any, ctx) => {
     logger.error("Bot error occurred", {
-      type: LogType.ERROR,
+      type: LogType.SYSTEM,
       error: err instanceof Error ? err : new Error(String(err)),
       userId: ctx.from?.id,
       username: ctx.from?.username,
-      message: ctx.message?.text
+      data: { message: (ctx.message as any)?.text }
     });
     ctx.reply("Произошла ошибка. Пожалуйста, попробуйте позже.").catch(() => {});
   });

@@ -4,22 +4,12 @@ import { LogLevel } from "./utils/logger";
 // Загружаем переменные из .env файла
 dotenv.config();
 
-export interface AppConfig {
-  BOT_TOKEN: string;
-  NODE_ENV: "development" | "production" | "test";
-  LOG_LEVEL: LogLevel;
-  // Настройки базы данных Neon
-  DATABASE_URL?: string;
-  // Опциональные параметры для использования веб-хуков вместо long polling
-  WEBHOOK_DOMAIN?: string;
-  PORT?: number;
-  // Apollo Client конфигурация
-  GRAPHQL_ENDPOINT?: string;
-  vectara: {
-    customerId: string;
+export interface Config {
+  bot: {
+    token: string;
+  };
+  openai: {
     apiKey: string;
-    corpusId: string;
-    servingEndpoint: string;
   };
 }
 
@@ -28,39 +18,33 @@ export interface AppConfig {
  * @param config Объект конфигурации для проверки
  * @throws Ошибку с описанием отсутствующих параметров
  */
-const validateRequiredConfig = (config: Partial<AppConfig>): void => {
+const validateRequiredConfig = (config: Partial<Config>): void => {
   const missingVars: string[] = [];
 
-  if (!config.BOT_TOKEN) {
+  if (!config.bot?.token) {
     missingVars.push("BOT_TOKEN");
   }
 
+  if (!config.openai?.apiKey) {
+    missingVars.push("OPENAI_API_KEY");
+  }
+
   if (missingVars.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(", ")}. ` +
-        "Please check your .env file or environment variables."
-    );
+    throw new Error(`Missing required environment variables: ${missingVars.join(", ")}`);
   }
 };
 
 /**
  * Создает объект конфигурации на основе переменных окружения
- * @returns Объект AppConfig с параметрами приложения
+ * @returns Объект Config с параметрами приложения
  */
-const createConfig = (): AppConfig => {
-  const partialConfig: Partial<AppConfig> = {
-    BOT_TOKEN: process.env.BOT_TOKEN,
-    NODE_ENV: (process.env.NODE_ENV as AppConfig["NODE_ENV"]) || "development",
-    LOG_LEVEL: (process.env.LOG_LEVEL as LogLevel) || LogLevel.INFO,
-    DATABASE_URL: process.env.DATABASE_URL,
-    WEBHOOK_DOMAIN: process.env.WEBHOOK_DOMAIN,
-    PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : undefined,
-    GRAPHQL_ENDPOINT: process.env.GRAPHQL_ENDPOINT,
-    vectara: {
-      customerId: process.env.VECTARA_CUSTOMER_ID || '',
-      apiKey: process.env.VECTARA_API_KEY || '',
-      corpusId: process.env.VECTARA_CORPUS_ID || '',
-      servingEndpoint: process.env.VECTARA_SERVING_ENDPOINT || 'api.vectara.io',
+const createConfig = (): Config => {
+  const partialConfig: Partial<Config> = {
+    bot: {
+      token: process.env.BOT_TOKEN || '',
+    },
+    openai: {
+      apiKey: process.env.OPENAI_API_KEY || '',
     },
   };
 
@@ -68,11 +52,11 @@ const createConfig = (): AppConfig => {
   validateRequiredConfig(partialConfig);
 
   // Если мы дошли до этой точки, значит все обязательные параметры присутствуют
-  return partialConfig as AppConfig;
+  return partialConfig as Config;
 };
 
 // Создаем и экспортируем конфигурацию
-export const config: AppConfig = (() => {
+export const config: Config = (() => {
   try {
     return createConfig();
   } catch (error) {
@@ -82,4 +66,4 @@ export const config: AppConfig = (() => {
 })();
 
 // Экспортируем тип конфигурации для использования в context
-export type BotConfig = Readonly<AppConfig>;
+export type BotConfig = Readonly<Config>;

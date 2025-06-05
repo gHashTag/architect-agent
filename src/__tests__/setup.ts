@@ -1,16 +1,21 @@
 import { beforeEach, afterEach, mock, expect } from 'bun:test';
 import * as dotenv from 'dotenv';
+import { beforeAll, afterAll } from 'vitest';
 
-// Загружаем переменные окружения из .env файла
-dotenv.config();
+// Загружаем тестовые переменные окружения
+beforeAll(async () => {
+  // Устанавливаем тестовые переменные окружения
+  process.env.NODE_ENV = 'test';
+  process.env.BOT_TOKEN = 'test-bot-token';
+  process.env.OPENAI_API_KEY = 'test-openai-key';
+  
+  dotenv.config({ path: '.env.test' });
+});
 
 // Проверяем наличие необходимых переменных окружения
 const requiredEnvVars = [
   'BOT_TOKEN',
-  'VECTARA_CUSTOMER_ID',
-  'VECTARA_API_KEY',
-  'VECTARA_CORPUS_ID',
-  'VECTARA_SERVING_ENDPOINT'
+  'OPENAI_API_KEY'
 ];
 
 for (const envVar of requiredEnvVars) {
@@ -100,13 +105,6 @@ afterEach(() => {
   "postgresql://fake:fake@fake.neon.tech/fake";
 
 // Настройка глобальных моков
-mock.module('../adapters/vectara-adapter', () => ({
-  VectaraAdapter: mock(() => ({
-    query: mock(),
-    uploadDocument: mock(),
-  })),
-}));
-
 mock.module('telegraf', () => ({
   Telegraf: mock(() => ({
     command: mock(),

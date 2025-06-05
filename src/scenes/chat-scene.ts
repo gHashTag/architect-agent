@@ -11,7 +11,7 @@ chatScene.enter(async (ctx) => {
     userId: ctx.from?.id,
     username: ctx.from?.username
   });
-  await ctx.reply('Привет! Я чат-бот на базе Vectara. Задайте мне вопрос, и я постараюсь найти ответ в документации.\n\nИспользуйте /exit для выхода.');
+  await ctx.reply('Привет! Я простой чат-бот. Отправьте мне сообщение, и я отвечу.\n\nИспользуйте /exit для выхода.');
 });
 
 chatScene.on('text', async (ctx) => {
@@ -34,35 +34,9 @@ chatScene.on('text', async (ctx) => {
       query
     });
 
-    const results = await ctx.scene.session.vectaraAdapter.query(query);
-    logger.info("Vectara query results", {
-      type: LogType.SYSTEM,
-      userId: ctx.from?.id,
-      resultsCount: results.response.length
-    });
-
-    if (results.response.length === 0) {
-      logger.info("No relevant information found", {
-        type: LogType.SYSTEM,
-        userId: ctx.from?.id,
-        query
-      });
-      await ctx.reply('К сожалению, я не нашел релевантной информации по вашему вопросу.');
-      return;
-    }
-
-    // Формируем ответ на основе найденных результатов
-    const response = results.response
-      .map((result, index) => `${index + 1}. ${result.text}\n(Релевантность: ${Math.round(result.score * 100)}%)`)
-      .join('\n\n');
-
-    logger.info("Sending response to user", {
-      type: LogType.SYSTEM,
-      userId: ctx.from?.id,
-      responseLength: response.length
-    });
-
-    await ctx.reply(response);
+    // Простой эхо-ответ
+    await ctx.reply(`Вы написали: "${query}"\n\nЯ пока простой эхо-бот. Для AI-консультаций используйте команду /ai`);
+    
   } catch (error) {
     logger.error('Error in chat scene', {
       type: LogType.SYSTEM,
